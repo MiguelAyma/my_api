@@ -1,0 +1,11 @@
+fastapi
+SQLAlchemy
+psycopg2-binary
+python-jose
+ipykernel
+firebase-admin
+uvicorn
+python-multipart
+firebase_admin
+python-dotenv
+pydantic_settings
