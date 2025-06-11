@@ -1,12 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-# from core.config import settings  # Archivo donde centralizas la configuración (e.g., ALLOW_ORIGINS)
 from app.core.config import settings
 from app.routers import (
+    category,
     user,
     business
 )
-from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(
     title="My API",
@@ -29,7 +28,7 @@ def read_root():
 
 app.include_router(user.router, prefix="/api/v1/user", tags=["User"])
 app.include_router(business.router, prefix="/api/v1/business", tags=["Business"])
-
+app.include_router(category.router, prefix="/api/v1/category", tags=["Category"])
 
 
 
