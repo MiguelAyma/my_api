@@ -1,11 +1,12 @@
+from typing import List
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 
 #from app.data._sqlalchemy_models import business
 from app.models.sql_alchemy_models import Business 
-from app.data._business_crud import create_business_data,update_business_data,get_business_data
-from app.schemas._business import BusinessBase, BusinessResponse
+from app.data._business_crud import create_business_data, delete_business_data, get_all_businesses_by_user_data,update_business_data,get_business_data
+from app.schemas._business import BusinessBase, BusinessNotFoundError, BusinessResponse, DeleteBusinessResponse
 from app.schemas._error import ErrorType, raise_app_error
 
 def create_business_service(
@@ -142,7 +143,6 @@ def get_business_service(db: Session, user_id:str ,business_id: int) -> Business
             business_id=record.business_id,
             business_name = record.business_name,
             business_description = record.business_description,
-
             facebook_url = record.facebook_url,
             instagram_url = record.instagram_url,
             tiktok_url=record.tiktok_url,
@@ -159,6 +159,71 @@ def get_business_service(db: Session, user_id:str ,business_id: int) -> Business
         raise_app_error(
             error_code="BusinessServiceError",
             message="Failed to get Business in service layer.",
+            error_type=ErrorType.SERVICE,
+            details=str(e)
+        )
+        
+def delete_business_service(
+        business_id: int,
+        db: Session,
+    ) ->DeleteBusinessResponse:
+    """
+    Delete a Business item from the database.
+
+    Args:
+        business_id (str): The ID of the Business item to delete.
+        db (Session): The database session.
+    """
+    try:
+        return delete_business_data(business_id, db)
+    except BusinessNotFoundError:
+        raise HTTPException(status_code=404, detail="Business not found")
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        raise_app_error(
+            error_code="BusinessServiceError",
+            message="Failed to delete Business in service layer.",
+            error_type=ErrorType.SERVICE,
+            details=str(e)
+        )
+
+def get_all_businesses_by_user_service(db: Session, user_id: str) -> List[BusinessResponse]:
+    """
+    Gets all businesses for a specific user.
+
+    Args:
+        db (Session): The database session.
+        user_id (str): The ID of the user.
+
+    Returns:
+        List[BusinessResponse]: A list of businesses in Pydantic format.
+    """
+    try:
+        records: List[Business] = get_all_businesses_by_user_data(user_id=user_id, db=db)
+        
+        # Convertimos cada registro SQLAlchemy de la lista a un BusinessResponse
+        return [
+            BusinessResponse(
+                business_id=record.business_id,
+                business_name=record.business_name,
+                business_description=record.business_description,
+                facebook_url=record.facebook_url,
+                instagram_url=record.instagram_url,
+                tiktok_url=record.tiktok_url,
+                email=record.email,
+                whatsapp_url=record.whatsapp_url,
+                address=record.address,
+                address_url=record.address_url,
+                created_at=record.created_at,
+                updated_at=record.updated_at
+            ) for record in records
+        ]
+    except Exception as e:
+        # Capturamos cualquier error inesperado en la capa de servicio
+        raise_app_error(
+            error_code="BusinessServiceError",
+            message="Failed to get businesses in service layer.",
             error_type=ErrorType.SERVICE,
             details=str(e)
         )

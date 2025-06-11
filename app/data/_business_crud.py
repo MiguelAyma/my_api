@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import HTTPException
 
 from sqlalchemy import desc
@@ -5,7 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 #from app.data._sqlalchemy_models import business
 from app.models.sql_alchemy_models import Business
-from app.schemas._business import BusinessBase, BusinessResponse
+from app.schemas._business import BusinessBase, BusinessNotFoundError, BusinessResponse, DeleteBusinessResponse
 from app.schemas._error import ErrorType, raise_app_error #, BusinessNotFoundError, DeleteBusinessResponse
 
 
@@ -122,6 +123,75 @@ def get_business_data(user_id: str,business_id:int ,db: Session) -> Business:
             details=str(e),
             additional_data={
                 "operation": "get",
+                "model": "Business"
+            }
+        )
+        
+
+def delete_business_data(business_id: int, db: Session) -> DeleteBusinessResponse:
+    try:
+        db_business = db.query(Business).filter(
+            Business.business_id == business_id,
+            Business.is_deleted == False
+        ).first()
+        
+        if not db_business:
+            raise BusinessNotFoundError(f"Business with id {business_id} not found")
+
+        # Eliminar negocio manualmente
+        db_business.is_deleted = True
+        db_business.deleted_by_user = True
+
+        db.commit()
+
+        return DeleteBusinessResponse(
+            message="Business has been deleted",
+            id=business_id
+        )
+
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise_app_error(
+            error_code="DatabaseBusinessError",
+            message="Failed to logically delete Business and related data.",
+            error_type=ErrorType.DATA,
+            status_code=500,
+            details=str(e),
+            additional_data={
+                "operation": "logical_delete",
+                "model": "Business"
+            }
+        )
+
+def get_all_businesses_by_user_data(user_id: str, db: Session) -> List[Business]:
+    """
+    Retrieves all Business records from the database for a specific user.
+
+    Args:
+        user_id (str): The ID of the user whose businesses are to be retrieved.
+        db (Session): The SQLAlchemy database session.
+
+    Returns:
+        List[Business]: A list of Business SQLAlchemy objects. Returns an empty list if none are found.
+    
+    Raises:
+        AppError: If a database error occurs.
+    """
+    try:
+        # Usamos .all() para obtener todos los registros que coincidan con el user_id
+        return db.query(Business).filter(
+            Business.user_id == user_id,
+            Business.is_deleted == False
+        ).all()
+    except SQLAlchemyError as e:
+        # Reutilizamos el mismo manejo de errores para fallos de base de datos
+        raise_app_error(
+            error_code="DatabaseBusinessError",
+            message="Failed to get businesses from the database.",
+            error_type=ErrorType.DATA,
+            details=str(e),
+            additional_data={
+                "operation": "get_all_by_user",
                 "model": "Business"
             }
         )
