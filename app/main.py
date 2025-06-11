@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.routers import (
     category,
+    item,
     user,
     business
 )
@@ -29,7 +30,7 @@ def read_root():
 app.include_router(user.router, prefix="/api/v1/user", tags=["User"])
 app.include_router(business.router, prefix="/api/v1/business", tags=["Business"])
 app.include_router(category.router, prefix="/api/v1/category", tags=["Category"])
-
+app.include_router(item.router, prefix="/api/v1/item", tags=["Item"])
 
 
 
