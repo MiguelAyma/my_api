@@ -1,4 +1,5 @@
-from sqlalchemy import  Boolean, Integer, String, DECIMAL, DateTime, ForeignKey
+
+from sqlalchemy import  Boolean, Integer, String, DECIMAL, DateTime, ForeignKey,ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase, relationship
 import datetime
 
@@ -77,7 +78,6 @@ class Item(Base):
         passive_deletes=True  #Esto evita el UPDATE a NULL
     )
     business = relationship("Business", back_populates="items")
-
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
     updated_at: Mapped[datetime.datetime] = mapped_column(
@@ -100,8 +100,82 @@ class ItemCategory(Base):
 
 
 
+class Archetype(Base):
+    __tablename__ = "adk_archetype"
+
+    archetype_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(100))
+    description: Mapped[str] = mapped_column(String(255))
+    icon: Mapped[str] = mapped_column(String(255))
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc))
+
+    #bots: Mapped[list["Bot"]] = relationship(back_populates="archetype")
     
-    
-    
-    
-    
+class Tone(Base):
+    __tablename__ = "adk_tone"
+
+    tone_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(100))
+    associated_emoji: Mapped[str] = mapped_column(String(10))
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc))
+
+    #bot_tones: Mapped[list["BotTone"]] = relationship(back_populates="tone")
+
+
+class Bot(Base):
+    __tablename__ = "adk_bot"
+    bot_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    business_id: Mapped[int] = mapped_column(Integer)
+    name: Mapped[str] = mapped_column(String(100))
+    archetype_id: Mapped[int] = mapped_column(ForeignKey("adk_archetype.archetype_id"))
+    formality_level: Mapped[int] = mapped_column(Integer)
+    proactivity_level: Mapped[int] = mapped_column(Integer)
+    response_length: Mapped[int] = mapped_column(Integer)
+    main_goal: Mapped[str] = mapped_column(String(255))
+    limiting_instructions: Mapped[str] = mapped_column(String(255))
+    version: Mapped[str] = mapped_column(String(20))
+    status: Mapped[str] = mapped_column(String(50))
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc))
+    #archetype: Mapped["Archetype"] = relationship(back_populates="bots")
+    bot_tones: Mapped[list["BotTone"]] = relationship(back_populates="bot")
+
+
+class BotTone(Base):
+    __tablename__ = "bot_tones"
+
+    bot_tone_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    bot_id: Mapped[int] = mapped_column(ForeignKey("adk_bot.bot_id"))
+    tone_id: Mapped[int] = mapped_column(ForeignKey("adk_tone.tone_id"))
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc))
+
+    bot: Mapped["Bot"] = relationship(back_populates="bot_tones")
+    #tone: Mapped["Tone"] = relationship(back_populates="bot_tones")
+
+
+class KnowledgeEntries(Base):
+    __tablename__ = "adk_knowledge_entries"
+    entry_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    business_id: Mapped[int] = mapped_column(ForeignKey("adk_business.business_id"))
+    title: Mapped[str] = mapped_column(String(255))
+    content: Mapped[str] = mapped_column(String(1000))
+    content_type: Mapped[str] = mapped_column(String(255))
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), onupdate=lambda: datetime.datetime.now(datetime.timezone.utc))
+    icon: Mapped[str] = mapped_column(String(255))
+    improved_title: Mapped[str] = mapped_column(String(255))
+    improved_content: Mapped[str] = mapped_column(String(1000))
+    categories: Mapped[list[str]] =  mapped_column(ARRAY(String(255)))

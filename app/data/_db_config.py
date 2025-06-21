@@ -31,20 +31,22 @@ def get_db():
     retry_delay = 2  # seconds
 
     while attempt_count < max_attempts:
-        db = SessionLocal()
         try:
-            yield db
-            break  # If successful, exit the loop
+            db = SessionLocal()
+            yield db  # Solo entra aquí si la conexión fue exitosa
+            return     # Salir correctamente tras yield
         except OperationalError as e:
             print(f"SSL connection error occurred: {e}, retrying...")
             attempt_count += 1
             time.sleep(retry_delay)
         except SQLAlchemyError as e:
             print(f"Database error occurred: {e}")
-            break
+            raise e
         finally:
-            db.close()
+            try:
+                db.close()
+            except:
+                pass  # Ignorar errores al cerrar
 
-        if attempt_count == max_attempts:
-            print("Failed to connect to the database after several attempts.")
-            
+    raise RuntimeError("Failed to connect to the database after several attempts.")
+

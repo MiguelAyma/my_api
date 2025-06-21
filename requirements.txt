@@ -9,3 +9,6 @@ python-multipart
 firebase_admin
 python-dotenv
 pydantic_settings
+google-adk
+litellm
+google-generativeai
